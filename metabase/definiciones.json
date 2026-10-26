@@ -1,0 +1,151 @@
+{
+  "model": {
+    "name": "Estudiantes · Modelo socioeconomico",
+    "display": "table",
+    "dataset_query": {
+      "stages": [
+        {
+          "lib/type": "mbql.stage/native",
+          "native": "SELECT * FROM estudiantes"
+        }
+      ],
+      "lib/type": "mbql/query",
+      "database": 4
+    },
+    "visualization_settings": {}
+  },
+  "charts": [
+    {
+      "name": "1. Distribución del rendimiento académico",
+      "description": "Datos originales; nulos excluidos solo en las variables de cada análisis. Aprobación: >=40%, coherente con clase F del dataset. Correlación no implica causalidad.",
+      "display": "bar",
+      "dataset_query": {
+        "stages": [
+          {
+            "lib/type": "mbql.stage/native",
+            "native": "SELECT grade_class AS Calificacion, COUNT(*) AS Estudiantes FROM estudiantes WHERE grade_class IS NOT NULL GROUP BY grade_class ORDER BY grade_class"
+          }
+        ],
+        "lib/type": "mbql/query",
+        "database": 4
+      },
+      "visualization_settings": {
+        "graph.dimensions": [
+          "Calificacion"
+        ],
+        "graph.x_axis.title_text": "Calificación (clase del dataset)",
+        "graph.y_axis.title_text": "Estudiantes",
+        "graph.metrics": [
+          "Estudiantes"
+        ]
+      }
+    },
+    {
+      "name": "2. Educación de los padres y calificaciones",
+      "description": "Datos originales; nulos excluidos solo en las variables de cada análisis. Aprobación: >=40%, coherente con clase F del dataset. Correlación no implica causalidad.",
+      "display": "bar",
+      "dataset_query": {
+        "stages": [
+          {
+            "lib/type": "mbql.stage/native",
+            "native": "SELECT COALESCE(father_education_level, 'Sin dato') AS Educacion_padre, gender AS Genero, AVG(final_grade_pct) AS Promedio FROM estudiantes WHERE final_grade_pct IS NOT NULL GROUP BY Educacion_padre, Genero ORDER BY FIELD(Educacion_padre,'No Formal Education','Primary','Secondary','Higher Secondary',\"Bachelor's Degree\",\"Master's Degree\",'Doctorate','Sin dato')"
+          }
+        ],
+        "lib/type": "mbql/query",
+        "database": 4
+      },
+      "visualization_settings": {
+        "graph.dimensions": [
+          "Educacion_padre",
+          "Genero"
+        ],
+        "stackable.stack_type": null,
+        "graph.x_axis.title_text": "Nivel educativo del padre",
+        "graph.y_axis.title_text": "Calificación promedio (%)",
+        "graph.metrics": [
+          "Promedio"
+        ]
+      }
+    },
+    {
+      "name": "3. Horas de estudio y calificación final (muestra: 2,000)",
+      "description": "Muestra determinista de 2,000 estudiantes con horas conocidas, ordenada por student_id. Eje X: horas semanales; eje Y: calificación final. Metabase limita por defecto las consultas sin agregación a 2,000 filas. Las otras cuatro gráficas consideran toda su población válida.",
+      "display": "scatter",
+      "dataset_query": {
+        "stages": [
+          {
+            "lib/type": "mbql.stage/native",
+            "native": "SELECT study_hours_per_week AS Horas_estudio, final_grade_pct AS Calificacion, student_id AS Estudiante FROM estudiantes WHERE study_hours_per_week IS NOT NULL AND final_grade_pct IS NOT NULL ORDER BY student_id LIMIT 2000"
+          }
+        ],
+        "lib/type": "mbql/query",
+        "database": 4
+      },
+      "visualization_settings": {
+        "graph.dimensions": [
+          "Horas_estudio"
+        ],
+        "graph.x_axis.title_text": "Horas de estudio por semana",
+        "graph.y_axis.title_text": "Calificación final (%)",
+        "graph.metrics": [
+          "Calificacion"
+        ]
+      }
+    },
+    {
+      "name": "4. Brecha digital: aprobación y acceso a internet",
+      "description": "Datos originales; nulos excluidos solo en las variables de cada análisis. Aprobación: >=40%, coherente con clase F del dataset. Correlación no implica causalidad.",
+      "display": "pie",
+      "dataset_query": {
+        "stages": [
+          {
+            "template-tags": [
+              {
+                "display-name": "Acceso a internet (1 = Sí, 0 = No)",
+                "id": "internet",
+                "name": "internet",
+                "type": "number"
+              }
+            ],
+            "lib/type": "mbql.stage/native",
+            "native": "SELECT CASE WHEN final_grade_pct >= 40 THEN 'Aprobados' ELSE 'Reprobados' END AS Estado, COUNT(*) AS Estudiantes FROM estudiantes WHERE final_grade_pct IS NOT NULL [[AND has_internet_access = {{internet}}]] GROUP BY Estado"
+          }
+        ],
+        "lib/type": "mbql/query",
+        "database": 4
+      },
+      "visualization_settings": {
+        "pie.dimension": "Estado",
+        "pie.metric": "Estudiantes",
+        "pie.show_legend": true,
+        "pie.show_total": true,
+        "pie.percent_visibility": "inside"
+      }
+    },
+    {
+      "name": "5. Asistencia y rendimiento académico",
+      "description": "Datos originales; nulos excluidos solo en las variables de cada análisis. Aprobación: >=40%, coherente con clase F del dataset. Correlación no implica causalidad.",
+      "display": "line",
+      "dataset_query": {
+        "stages": [
+          {
+            "lib/type": "mbql.stage/native",
+            "native": "SELECT CASE WHEN attendance_rate_pct = 0 THEN '00 · 0%' WHEN attendance_rate_pct <= 10 THEN '01 · 1-10%' WHEN attendance_rate_pct <= 20 THEN '02 · 11-20%' WHEN attendance_rate_pct <= 30 THEN '03 · 21-30%' WHEN attendance_rate_pct <= 40 THEN '04 · 31-40%' WHEN attendance_rate_pct <= 50 THEN '05 · 41-50%' WHEN attendance_rate_pct <= 60 THEN '06 · 51-60%' WHEN attendance_rate_pct <= 70 THEN '07 · 61-70%' WHEN attendance_rate_pct <= 80 THEN '08 · 71-80%' WHEN attendance_rate_pct <= 90 THEN '09 · 81-90%' ELSE '10 · 91-100%' END AS Asistencia, AVG(final_grade_pct) AS Promedio FROM estudiantes WHERE attendance_rate_pct IS NOT NULL AND final_grade_pct IS NOT NULL GROUP BY Asistencia ORDER BY Asistencia"
+          }
+        ],
+        "lib/type": "mbql/query",
+        "database": 4
+      },
+      "visualization_settings": {
+        "graph.dimensions": [
+          "Asistencia"
+        ],
+        "graph.x_axis.title_text": "Porcentaje de asistencia (rangos)",
+        "graph.y_axis.title_text": "Calificación promedio (%)",
+        "graph.metrics": [
+          "Promedio"
+        ]
+      }
+    }
+  ]
+}

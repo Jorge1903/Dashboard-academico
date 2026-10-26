@@ -1,0 +1,9 @@
+**/node_modules/
+**/vendor/
+**/.env
+**/.env.*
+!**/.env.example
+**/.git/
+**/storage/logs/*
+**/bootstrap/cache/*.php
+metabase/estado-local.json
